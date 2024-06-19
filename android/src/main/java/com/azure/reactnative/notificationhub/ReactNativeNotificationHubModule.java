@@ -14,8 +14,6 @@ import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.WritableMap;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 
 import com.microsoft.windowsazure.messaging.NotificationHub;
 
@@ -30,8 +28,7 @@ import com.facebook.react.bridge.UiThreadUtil;
 
 import static com.azure.reactnative.notificationhub.ReactNativeConstants.*;
 
-public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule implements
-        ActivityEventListener, LifecycleEventListener {
+public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule implements ActivityEventListener, LifecycleEventListener {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final int NOTIFICATION_DELAY_ON_START = 3000;
 
@@ -160,22 +157,6 @@ public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule
             notificationHubUtil.setUUID(reactContext, uuid);
         }
 
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(reactContext);
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-                UiThreadUtil.runOnUiThread(
-                        new GoogleApiAvailabilityRunnable(
-                                getCurrentActivity(),
-                                apiAvailability,
-                                resultCode));
-                promise.reject(ERROR_PLAY_SERVICES, ERROR_PLAY_SERVICES_DISABLED);
-            } else {
-                promise.reject(ERROR_PLAY_SERVICES, ERROR_PLAY_SERVICES_UNSUPPORTED);
-            }
-            return;
-        }
-
         Intent intent = ReactNativeNotificationHubUtil.IntentFactory.createIntent(
                 reactContext, ReactNativeRegistrationIntentService.class);
         ReactNativeRegistrationIntentService.enqueueWork(reactContext, intent);
@@ -270,22 +251,6 @@ public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule
         if (uuid == null) {
             uuid = ReactNativeUtil.genUUID();
             notificationHubUtil.setUUID(reactContext, uuid);
-        }
-
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(reactContext);
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-                UiThreadUtil.runOnUiThread(
-                        new GoogleApiAvailabilityRunnable(
-                                getCurrentActivity(),
-                                apiAvailability,
-                                resultCode));
-                promise.reject(ERROR_PLAY_SERVICES, ERROR_PLAY_SERVICES_DISABLED);
-            } else {
-                promise.reject(ERROR_PLAY_SERVICES, ERROR_PLAY_SERVICES_UNSUPPORTED);
-            }
-            return;
         }
 
         Intent intent = ReactNativeNotificationHubUtil.IntentFactory.createIntent(
@@ -403,6 +368,11 @@ public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+    }
+
+    @Override
     public void onNewIntent(Intent intent) {
         Bundle bundle = ReactNativeUtil.getBundleFromIntent(intent);
         if (bundle != null) {
@@ -413,36 +383,12 @@ public class ReactNativeNotificationHubModule extends ReactContextBaseJavaModule
         }
     }
 
-    @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-    }
-
     public class LocalBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (getIsForeground()) {
                 ReactNativeUtil.emitIntent(mReactContext, intent);
             }
-        }
-    }
-
-    private static class GoogleApiAvailabilityRunnable implements Runnable {
-        private final Activity activity;
-        private final GoogleApiAvailability apiAvailability;
-        private final int resultCode;
-
-        public GoogleApiAvailabilityRunnable(
-                Activity activity,
-                GoogleApiAvailability apiAvailability,
-                int resultCode) {
-            this.activity = activity;
-            this.apiAvailability = apiAvailability;
-            this.resultCode = resultCode;
-        }
-
-        @Override
-        public void run() {
-            apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
         }
     }
 }
