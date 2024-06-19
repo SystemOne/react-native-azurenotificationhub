@@ -37,6 +37,7 @@ dependencies {
     implementation "com.facebook.react:react-native:+"
     implementation 'com.google.firebase:firebase-messaging:24.0.0'
     implementation 'com.microsoft.azure:notification-hubs-android-sdk:2.0.0'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
 }
 
 allprojects {
